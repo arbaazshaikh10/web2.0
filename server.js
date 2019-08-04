@@ -5,16 +5,20 @@ const {save_user_information} = require('./models/server_db');
 const path = require('path');
 const publicPath = path.join(__dirname,'./public');
 const paypal = require('paypal-rest-sdk');
-
+const session = require('express-session');
 /* Handling all the parsing */
 app.use(bodyParser.json());
 app.use(express.static(publicPath));
-
+app.use(session(
+  { secret:'my web app',
+    cookie:{maxAge:60000}
+  }
+));
 //PayPal Configuration
 paypal.configure({
   'mode': 'sandbox', //sandbox or live
   'client_id': 'AW1A9VKeSsCxrstOaonFGsZUjJYrmN2XftEAjz5zZW8koJHAImrPqQd8CJpwAbVXIZIXjZFYnlZOWGmq',
-  'client_secret': 'EEK3gukxB3FNCfRikZ5-3XDGuigUr3U_qfaaPSezu5oNBqAqHYz4fOWN3KUrSx29NuRq7knjr_Ypqr12'
+  'client_secret': 'EEK3gukxB3FNCfRikZ5-3XDGuigUr3U_qfaaPSezu5oNBqAqHYz4fOWN3KUrSx29NuRq7knjr_Ym1cbx'
 });
 
 app.post('/post_info', async (req,res)=>{
@@ -27,8 +31,9 @@ app.post('/post_info', async (req,res)=>{
     return_info.message = "The amount should be greater than 1";
     return res.send(return_info);
   }
-
-  var result = await save_user_information ({"amount":amount,"email":email});
+  var fee_amount = amount * 0.9;
+  var result = await save_user_information ({"amount":fee_amount,"email":email});
+  req.session.paypal_amount = amount;
 
   var create_payment_json = {
     "intent": "sale",
@@ -87,7 +92,7 @@ app.get('/success',(req,res)=>{
     "transactions":[{
       "amount":{
         "currency":"USD",
-        "total":100
+        "total":req.session.paypal_amount
       }
     }]
   };
