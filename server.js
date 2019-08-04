@@ -78,6 +78,31 @@ paypal.payment.create(create_payment_json, function (error, payment) {
 
 });
 
+app.get('/success',(req,res)=>{
+  const payerId = req.query.PayerID;
+  const paymentId = req.query.paymentId;
+
+  var execute_payment_json ={
+    "payer_id":payerId,
+    "transactions":[{
+      "amount":{
+        "currency":"USD",
+        "total":100
+      }
+    }]
+  };
+
+  paypal.payment.execute(paymentId, execute_payment_json, function(error,payment){
+    if(error){
+      console.log(error,response);
+      throw error;
+    }else{
+      console.log(payment);
+    }
+  });
+  res.redirect('http://localhost:3000');
+});
+
 app.get('/get_total_amount', async (req,res) => {
   var result = await get_total_amount();
   res.send(result);
